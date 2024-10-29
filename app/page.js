@@ -362,40 +362,76 @@ const calculateCategoryAnalytics = () => {
   
   {/* Analytics Grid */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    {/* Chart Section */}
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <h3 className="text-lg font-semibold mb-4">Category Distribution</h3>
-      <div className="h-[300px] flex items-center justify-center">
-        <Doughnut
-          data={{
-            labels: categories.filter(cat => 
-              goals.some(g => g.category === cat)
-            ),
-            datasets: [{
-              data: categories.map(cat => 
-                goals.filter(g => g.category === cat).length
-              ),
-              backgroundColor: [
-                'rgba(59, 130, 246, 0.5)', // blue
-                'rgba(16, 185, 129, 0.5)', // green
-                'rgba(249, 115, 22, 0.5)', // orange
-                'rgba(239, 68, 68, 0.5)',  // red
-                'rgba(139, 92, 246, 0.5)', // purple
-                'rgba(236, 72, 153, 0.5)', // pink
-                'rgba(245, 158, 11, 0.5)', // yellow
-                'rgba(75, 85, 99, 0.5)',   // gray
-                'rgba(14, 165, 233, 0.5)', // light blue
-                'rgba(168, 85, 247, 0.5)'  // violet
-              ]
-            }]
-          }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-          }}
-        />
-      </div>
-    </div>
+{/* Chart Section */}
+<div className="bg-gray-50 p-4 rounded-lg">
+  <h3 className="text-lg font-semibold mb-4">Category Distribution</h3>
+  <div className="h-[300px] flex items-center justify-center">
+    <Doughnut
+      data={{
+        // Only show categories with goals
+        labels: categories.filter(category => 
+          goals.filter(g => g.category === category).length > 0
+        ),
+        datasets: [{
+          data: categories
+            .filter(category => goals.filter(g => g.category === category).length > 0)
+            .map(category => goals.filter(g => g.category === category).length),
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.7)',   // Business
+            'rgba(168, 85, 247, 0.7)',    // Career
+            'rgba(245, 158, 11, 0.7)',    // Community Service
+            'rgba(236, 72, 153, 0.7)',    // Family
+            'rgba(251, 191, 36, 0.7)',    // Habits
+            'rgba(239, 68, 68, 0.7)',     // Health
+            'rgba(99, 102, 241, 0.7)',    // Investments
+            'rgba(249, 115, 22, 0.7)',    // Personal Growth
+            'rgba(244, 63, 94, 0.7)',     // Relationship
+            'rgba(20, 184, 166, 0.7)'     // Spiritual
+          ],
+          borderWidth: 2,
+          borderColor: 'white'
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            display: true,
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: {
+                size: 12
+              },
+              generateLabels: (chart) => {
+                const datasets = chart.data.datasets;
+                const data = datasets[0].data;
+                return chart.data.labels.map((label, i) => ({
+                  text: `${label} (${data[i]})`,
+                  fillStyle: datasets[0].backgroundColor[i],
+                  index: i
+                }));
+              }
+            }
+          },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                return `${label}: ${value} goal${value !== 1 ? 's' : ''}`;
+              }
+            }
+          }
+        },
+        cutout: '60%'
+      }}
+    />
+  </div>
+</div>
 
     {/* Metrics Section */}
     <div className="space-y-4">
