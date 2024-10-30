@@ -21,7 +21,8 @@ import {
   X,
   AlertCircle,
   Menu, // Added for mobile menu
-  Filter // Added for mobile filters
+  Filter, // Added mobile filters
+  RefreshCw  // Added for quote refresh - note the comma on the line above
 } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -49,6 +50,40 @@ ChartJS.register(
 );
 
 // ===== SECTION 3: CONSTANTS =====
+const motivationalQuotes = [
+"Am I making choices today that align with the life I envision?",
+"Is this action helping me become the person I want to be?",
+"Am I investing my time in things that truly matter to me?",
+"What small step can I take today to get closer to my dreams?",
+"Am I surrounding myself with people who support my growth?",
+"How would my future self thank me for the choices I make now?",
+"What fear am I ready to face to reach my next level?",
+"Is my current mindset helping or hindering my progress?",
+"Am I holding onto anything that’s keeping me from moving forward?",
+"How can I challenge myself today to expand my comfort zone?",
+"Am I giving my best effort in areas that matter most?",
+"What am I willing to sacrifice to achieve my dreams?",
+"Is there a skill I can learn to help me succeed?",
+"Am I prioritizing growth or comfort in my daily decisions?",
+"What am I learning from today’s challenges?",
+"How can I create more moments of joy on this journey?",
+"Am I truly listening to my intuition about what’s right for me?",
+"Who do I admire, and what qualities of theirs can I develop?",
+"Is my lifestyle aligned with the goals I want to achieve?",
+"What would I do if I knew I couldn’t fail?",
+"How can I use my unique strengths to make progress?",
+"What’s one thing I’ve been putting off that would bring me closer to my goal?",
+"Am I grateful for the progress I’ve already made?",
+"How would my life change if I took action on my dreams today?",
+"What limiting beliefs can I let go of to grow?",
+"Am I treating myself with the kindness and patience I need?",
+"What legacy do I want to build with my actions?",
+"How can I make today more meaningful in pursuit of my goals?",
+"What’s one thing I can start doing today that my future self will thank me for?",
+"Am I willing to embrace uncertainty to discover my true potential?",
+  // ... add all 30 quotes
+];
+
 const categories = [
   'Business',
   'Career',
@@ -79,6 +114,9 @@ const categoryColors = {
 // ===== SECTION 4: MAIN COMPONENT =====
 export default function Page() {
   // ===== SECTION 4A: STATES =====
+  const [currentQuote, setCurrentQuote] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
   const [goals, setGoals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -101,6 +139,11 @@ export default function Page() {
   });
 
   // ===== SECTION 4B: EFFECTS =====
+
+  useEffect(() => {
+    getRandomQuote();
+  }, []);
+
   useEffect(() => {
     fetchGoals();
   }, []);
@@ -125,6 +168,10 @@ export default function Page() {
   }, [isMobileMenuOpen]);
   
   // ===== SECTION 4C: FUNCTIONS =====
+  const getRandomQuote = () => {
+    const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+    setCurrentQuote(motivationalQuotes[randomIndex]);
+  };
   const fetchGoals = async () => {
     try {
       setIsLoading(true);
@@ -199,6 +246,34 @@ export default function Page() {
     }
   };
   // Add after other functions
+// Add with other functions
+const handleEditClick = (goal) => {
+  setEditingGoal(goal);
+  setIsEditModalOpen(true);
+};
+
+const handleEditSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const goalRef = doc(db, 'goals', editingGoal.id);
+    await updateDoc(goalRef, {
+      goal: editingGoal.goal,
+      category: editingGoal.category,
+      purpose: editingGoal.purpose,
+      dueDate: editingGoal.dueDate
+    });
+
+    setGoals(goals.map(g => 
+      g.id === editingGoal.id ? editingGoal : g
+    ));
+    setIsEditModalOpen(false);
+    setEditingGoal(null);
+  } catch (err) {
+    setError('Failed to update goal');
+    console.error('Error updating goal:', err);
+  }
+};
+
 const calculateCategoryAnalytics = () => {
   const analytics = categories.map(category => {
     const categoryGoals = goals.filter(g => g.category === category);
@@ -289,30 +364,49 @@ const calculateCategoryAnalytics = () => {
         </div>
       </div>
 
+{/* Motivational Quote Card */}
+<div className="mb-8 bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg shadow-sm text-white">
+  <div className="flex justify-between items-start">
+    <div className="space-y-2">
+      <h2 className="text-xl font-semibold text-white mb-3">Daily Reflection</h2>
+      <p className="text-lg font-medium text-white/90 leading-relaxed">
+        "{currentQuote}"
+      </p>
+    </div>
+    <button 
+      onClick={getRandomQuote}
+      className="p-2 hover:bg-blue-600/50 rounded-full transition-all"
+      title="Get new quote"
+    >
+      <RefreshCw className="w-5 h-5 text-white" />
+    </button>
+  </div>
+</div>
+
       {/* Progress Chart Section */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-xl font-semibold mb-4">Progress by Category</h2>
         <div className="w-full h-[400px]">
           <Bar 
-            data={{
-              labels: categories,
-              datasets: [
-                {
-                  label: 'Total Goals',
-                  data: categories.map(category => 
-                    goals.filter(g => g.category === category).length
-                  ),
-                  backgroundColor: 'rgba(59, 130, 246, 0.5)', // blue
-                },
-                {
-                  label: 'Completed',
-                  data: categories.map(category => 
-                    goals.filter(g => g.category === category && g.status === 'completed').length
-                  ),
-                  backgroundColor: 'rgba(16, 185, 129, 0.5)', // green
-                }
-              ],
-            }}
+data={{
+  labels: categories,
+  datasets: [
+    {
+      label: 'Total Goals',
+      data: categories.map(category => 
+        goals.filter(g => g.category === category).length
+      ),
+      backgroundColor: 'rgba(59, 130, 246, 0.6)', // Stronger blue
+    },
+    {
+      label: 'Completed',
+      data: categories.map(category => 
+        goals.filter(g => g.category === category && g.status === 'completed').length
+      ),
+      backgroundColor: 'rgba(16, 185, 129, 0.6)', // Stronger green
+    }
+  ],
+}}
             options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -338,24 +432,6 @@ const calculateCategoryAnalytics = () => {
         </div>
       </div>
 
-      {/* Category Filter Section */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by Category
-        </label>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="p-2 border rounded-md"
-        >
-          <option value="All">All Categories</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
       {/* Categories Analytics Section */}
 <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
   <h2 className="text-2xl font-bold mb-6">Category Analytics</h2>
@@ -377,16 +453,16 @@ const calculateCategoryAnalytics = () => {
             .filter(category => goals.filter(g => g.category === category).length > 0)
             .map(category => goals.filter(g => g.category === category).length),
           backgroundColor: [
-            'rgba(59, 130, 246, 0.7)',   // Business
-            'rgba(168, 85, 247, 0.7)',    // Career
-            'rgba(245, 158, 11, 0.7)',    // Community Service
-            'rgba(236, 72, 153, 0.7)',    // Family
-            'rgba(251, 191, 36, 0.7)',    // Habits
-            'rgba(239, 68, 68, 0.7)',     // Health
-            'rgba(99, 102, 241, 0.7)',    // Investments
-            'rgba(249, 115, 22, 0.7)',    // Personal Growth
-            'rgba(244, 63, 94, 0.7)',     // Relationship
-            'rgba(20, 184, 166, 0.7)'     // Spiritual
+            'rgba(59, 130, 246, 0.7)',   // Business - Light blue
+            'rgba(147, 51, 234, 0.7)',   // Community Service - Light purple
+            'rgba(236, 72, 153, 0.7)',   // Family - Light pink
+            'rgba(79, 70, 229, 0.7)',    // Investments - Light indigo
+            'rgba(245, 158, 11, 0.7)',   // Personal Growth - Light amber
+            'rgba(20, 184, 166, 0.7)',   // Spiritual - Light teal
+            'rgba(239, 68, 68, 0.7)',    // Additional colors if needed
+            'rgba(168, 85, 247, 0.7)',
+            'rgba(251, 146, 60, 0.7)',
+            'rgba(14, 165, 233, 0.7)'
           ],
           borderWidth: 2,
           borderColor: 'white'
@@ -477,6 +553,26 @@ const calculateCategoryAnalytics = () => {
     </div>
   </div>
 </div>
+
+      {/* Category Filter Section */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Filter by Category
+        </label>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="p-2 border rounded-md"
+        >
+          <option value="All">All Categories</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Goals List Section */}
       <div className="space-y-4">
         {goals
@@ -494,12 +590,12 @@ const calculateCategoryAnalytics = () => {
                   <p className="text-gray-600 mt-1">{goal.purpose}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
-                    className="p-2 hover:bg-gray-100 rounded-full"
-                    onClick={() => {}} // Add edit functionality
-                  >
-                    <Edit2 className="w-5 h-5 text-gray-600" />
-                  </button>
+                <button 
+  className="p-2 hover:bg-gray-100 rounded-full"
+  onClick={() => handleEditClick(goal)}  // Update this line
+>
+  <Edit2 className="w-5 h-5 text-gray-600" />
+</button>
                   <button 
                     className="p-2 hover:bg-red-50 rounded-full"
                     onClick={() => deleteGoal(goal.id)}
@@ -547,9 +643,9 @@ const calculateCategoryAnalytics = () => {
         )}
       </div>
 
-      {/* Add Goal Modal Section */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+{/* Add Goal Modal Section */}
+{isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full m-4">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Add New Goal</h2>
@@ -632,6 +728,116 @@ const calculateCategoryAnalytics = () => {
                   className="flex-1 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Add Goal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Goal Modal */}
+      {isEditModalOpen && editingGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full m-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Edit Goal</h2>
+              <button 
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingGoal(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Goal Title
+                </label>
+                <input
+                  type="text"
+                  value={editingGoal.goal}
+                  onChange={(e) => setEditingGoal({
+                    ...editingGoal,
+                    goal: e.target.value
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={editingGoal.category}
+                  onChange={(e) => setEditingGoal({
+                    ...editingGoal,
+                    category: e.target.value
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  required
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Purpose
+                </label>
+                <textarea
+                  value={editingGoal.purpose}
+                  onChange={(e) => setEditingGoal({
+                    ...editingGoal,
+                    purpose: e.target.value
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={editingGoal.dueDate}
+                  onChange={(e) => setEditingGoal({
+                    ...editingGoal,
+                    dueDate: e.target.value
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingGoal(null);
+                  }}
+                  className="flex-1 py-2 border rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
