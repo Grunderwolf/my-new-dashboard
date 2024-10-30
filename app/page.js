@@ -102,8 +102,8 @@ const categoryColors = {
   'Health and Fitness': 'bg-red-100 text-red-800',
   'Investments': 'bg-indigo-100 text-indigo-800',
   'Personal Growth': 'bg-orange-100 text-orange-800',
-  'Relationship': 'bg-rose-100 text-rose-800',
-  'Spiritual': 'bg-teal-100 text-teal-800',
+  'Relationship': 'bg-teal-100 text-teal-800',
+  'Spiritual': 'bg-blue-200 text-blue-800',
   default: 'bg-gray-100 text-gray-800'
 };
 
@@ -113,6 +113,9 @@ const taskStatuses = ['Not Started', 'In Progress', 'Completed'];
 export default function Page() {
 
   // ===== SECTION 4A: STATES =====
+  // Add states for Success Journal
+  const [isSuccessJournalModalOpen, setIsSuccessJournalModalOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [currentQuote, setCurrentQuote] = useState('');
@@ -150,6 +153,25 @@ export default function Page() {
   }, []);
 
   // ===== SECTION 4C: FUNCTIONS =====
+
+  const handleSuccessJournalClick = () => {
+    setIsSuccessJournalModalOpen(true);
+  };
+  
+  const closeSuccessJournalModal = () => {
+    setIsSuccessJournalModalOpen(false);
+  };
+  
+  const getCompletedGoalsByYear = (year) => {
+    return goals.filter(
+      goal => goal.status === 'completed' && new Date(goal.dueDate).getFullYear() === year
+    );
+  };
+  
+  const handleYearChange = (e) => {
+    setSelectedYear(parseInt(e.target.value, 10));
+  };
+  
 
   const calculateGoalProgress = (goalId) => {
     const goalTasks = tasks.filter(task => task.goalId === goalId);
@@ -428,15 +450,77 @@ export default function Page() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">My Goals Dashboard</h1>
+<div className="flex justify-between items-center mb-8">
+  <h1 className="text-2xl font-bold">My Goals Dashboard</h1>
+  <div className="flex items-center gap-4">
+    <button 
+      onClick={() => setIsModalOpen(true)}
+      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+    >
+      + Add Goal
+    </button>
+    <button
+      onClick={handleSuccessJournalClick}
+      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+    >
+      Success Journal
+    </button>
+  </div>
+</div>
+
+
+      {isSuccessJournalModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-8 max-w-md w-full m-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Success Journal</h2>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          onClick={closeSuccessJournalModal}
+          className="text-gray-500 hover:text-gray-700"
         >
-          + Add Goal
+          <X className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Year Filter Dropdown */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Select Year</label>
+        <select
+          value={selectedYear}
+          onChange={handleYearChange}
+          className="p-2 border rounded-md w-full"
+        >
+          {[...new Set(goals.map(goal => new Date(goal.dueDate).getFullYear()))].map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Display Completed Goals for the Selected Year */}
+      <div className="space-y-4">
+        {getCompletedGoalsByYear(selectedYear).length === 0 ? (
+          <p className="text-gray-600">No achievements found for the selected year.</p>
+        ) : (
+          getCompletedGoalsByYear(selectedYear).map(goal => (
+            <div key={goal.id} className="bg-gray-100 p-4 rounded-lg">
+              <p className="font-medium">{goal.goal}</p>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="flex justify-end pt-4">
+        <button
+          onClick={closeSuccessJournalModal}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -485,23 +569,23 @@ export default function Page() {
       </div>
 
       {/* Motivational Quote Card */}
-      <div className="mb-8 bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg shadow-sm text-white">
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-white mb-3">Daily Reflection</h2>
-            <p className="text-lg font-medium text-white/90 leading-relaxed">
-              "{currentQuote}"
-            </p>
-          </div>
-          <button 
-            onClick={getRandomQuote}
-            className="p-2 hover:bg-blue-600/50 rounded-full transition-all"
-            title="Get new quote"
-          >
-            <RefreshCw className="w-5 h-5 text-white" />
-          </button>
-        </div>
-      </div>
+      <div className="mb-8 bg-gradient-to-r from-blue-400 to-blue-500 p-6 rounded-lg shadow-sm text-white">
+  <div className="flex justify-between items-start">
+    <div className="space-y-2">
+      <h2 className="text-xl font-semibold text-white mb-3">Daily Reflection</h2>
+      <p className="text-lg font-medium text-white/90 leading-relaxed">
+        "{currentQuote}"
+      </p>
+    </div>
+    <button 
+      onClick={getRandomQuote}
+      className="p-2 hover:bg-blue-600/50 rounded-full transition-all"
+      title="Get new quote"
+    >
+      <RefreshCw className="w-5 h-5 text-white" />
+    </button>
+  </div>
+</div>
 
       {/* Progress Chart Section */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-sm">
