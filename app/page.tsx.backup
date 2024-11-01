@@ -1,0 +1,11 @@
+// app/page.tsx
+import React from 'react';
+
+export default function Page() {
+  return (
+    <div>
+      <h1>Welcome to My Goals Dashboard!</h1>
+      <p>This is your main page content.</p>
+    </div>
+  );
+}

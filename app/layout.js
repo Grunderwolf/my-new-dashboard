@@ -1,9 +1,14 @@
-import './globals.css'
+// app/layout.js
+import { AuthProvider } from './context/AuthContext';
 
 export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body className="bg-gray-50">{children}</body>
-    </html>
-  )
+    return (
+        <html lang="en">
+            <body>
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
+            </body>
+        </html>
+    );
 }
