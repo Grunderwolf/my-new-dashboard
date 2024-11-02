@@ -3,43 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { auth } from '@/app/firebase/config';
 import { setCookie } from 'cookies-next';
 
 export default function LoginPage() {
     const router = useRouter();
+    const db = getFirestore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
-
-    useEffect(() => {
-        const cachedUser = localStorage.getItem('auth_user');
-        if (cachedUser) {
-            router.push('/');
-            return;
-        }
-
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                localStorage.setItem('auth_user', JSON.stringify({
-                    uid: user.uid,
-                    email: user.email
-                }));
-                router.push('/');
-            }
-            setInitialAuthCheckDone(true);
-        });
-
-        return () => {
-            unsubscribe();
-            setInitialAuthCheckDone(false);
-        };
-    }, [router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -60,8 +37,25 @@ export default function LoginPage() {
             let userCredential;
             
             if (isRegistering) {
+                // Handle registration with container creation
                 userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
-                console.log('Registration successful');
+                
+                // Create user container
+                await setDoc(doc(db, 'users', userCredential.user.uid), {
+                    email: trimmedEmail,
+                    containerId: userCredential.user.uid,
+                    createdAt: new Date().toISOString(),
+                    container: {
+                        settings: {
+                            theme: 'light',
+                            notifications: true
+                        },
+                        goals: [],
+                        lastAccessed: new Date().toISOString()
+                    }
+                });
+
+                console.log('Registration and container creation successful');
             } else {
                 userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
                 console.log('Login successful');

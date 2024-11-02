@@ -1,6 +1,6 @@
 // app/firebase/config.js
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -13,33 +13,21 @@ const firebaseConfig = {
     measurementId: "G-9ECXCKXBQT"
 };
 
-// Initialize Firebase only if no apps exist
+// Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firestore with optimized settings
-const db = getFirestore(app);
-
-// Initialize Auth
+// Get Auth instance
 const auth = getAuth(app);
 
-// Only run persistence initialization in browser environment
+// Set auth persistence to local to reduce re-authentication needs
 if (typeof window !== 'undefined') {
-    // Enable Firestore persistence with optimized settings
-    enableMultiTabIndexedDbPersistence(db, {
-        synchronizeTabs: true,
-        cacheSizeBytes: 5242880 // 5MB cache size
-    }).catch((err) => {
-        if (err.code === 'failed-precondition') {
-            console.warn('Firestore persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-            console.warn('Firestore persistence not supported');
-        }
-    });
-
-    // Set auth persistence to local to reduce re-authentication needs
     setPersistence(auth, browserLocalPersistence).catch((error) => {
         console.error('Auth persistence error:', error);
     });
 }
 
-export { db, auth };
+// Get Firestore instance
+const db = getFirestore(app);
+
+export { auth, db };
+export default app;

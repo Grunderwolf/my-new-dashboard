@@ -1,23 +1,28 @@
 // app/components/ProtectedRoute.js
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-//import { useAuth } from '../context/AuthContext';
-// app/components/ProtectedRoute.js
-import { useAuth } from '@/app/context/AuthContext';  // Updated path
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/app/firebase/config';
 
 export default function ProtectedRoute({ children }) {
-    const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
-            router.push('/auth/login');
-        }
-    }, [isAuthenticated, isLoading, router]);
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                console.log('No authenticated user, redirecting to login...');
+                router.push('/auth/login');
+            }
+            setLoading(false);
+        });
 
-    if (isLoading) {
+        return () => unsubscribe();
+    }, [router]);
+
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
@@ -25,5 +30,5 @@ export default function ProtectedRoute({ children }) {
         );
     }
 
-    return isAuthenticated ? children : null;
+    return children;
 }
